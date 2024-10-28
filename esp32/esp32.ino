@@ -2,6 +2,9 @@
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <MFRC522.h>
+#include <Arduino.h>
+#include <driver/ledc.h>
+
 
 // const char* ssid = "POCO F3"; // Cambié las comillas
 // const char* password = "llabakawifi"; // Cambié las comillas
@@ -9,7 +12,14 @@
 // PIN MFRC522
 #define SS_PIN 5
 #define RST_PIN 22
+// LED
+#define LED_PIN 26
 
+//BUZZER
+#define BUZZER_PIN 32
+int freq = 2000;
+int channel = 0;
+int resolution = 8;
 
 // Sustituir con datos de vuestra red
 const char *ssid     = "AEG-IKASLE";
@@ -70,6 +80,12 @@ void setup()
   // Mostrar versión del lector
   rfid.PCD_DumpVersionToSerial();
   Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
+
+  // SETUP LED
+  pinMode(LED_PIN, OUTPUT);
+
+  // SETUP BUZZER
+  pinMode(BUZZER_PIN, OUTPUT);
 }
 
 void connectToMQTT() {
@@ -138,6 +154,15 @@ void readRFID(void ) { /* function readRFID */
   Serial.print(F("RFID In dec: "));
   printDec(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
+  // GESTION DE LED
+  digitalWrite(LED_PIN, HIGH);
+  delay(1000); // LED encendido por 1 segundo
+  digitalWrite(LED_PIN, LOW);
+
+  //GESTION BUZZER
+  tone(BUZZER_PIN, 2000);  // Configura el buzzer en 2000 Hz
+  delay(1000);             // Activa el buzzer por 100 ms
+  noTone(BUZZER_PIN);      // Apaga el buzzer
 
   // Halt PICC
   rfid.PICC_HaltA();
