@@ -17,9 +17,6 @@
 
 //BUZZER
 #define BUZZER_PIN 32
-int freq = 2000;
-int channel = 0;
-int resolution = 8;
 
 // Sustituir con datos de vuestra red
 const char *ssid     = "AEG-IKASLE";
@@ -85,7 +82,7 @@ void setup()
   pinMode(LED_PIN, OUTPUT);
 
   // SETUP BUZZER
-  pinMode(BUZZER_PIN, OUTPUT);
+  // pinMode(BUZZER_PIN, OUTPUT);
 }
 
 void connectToMQTT() {
@@ -157,14 +154,10 @@ void readRFID(void ) { /* function readRFID */
   Serial.println();
   // GESTION DE LED
   digitalWrite(LED_PIN, HIGH);
+  tone(BUZZER_PIN, 2000); 
   delay(1000); // LED encendido por 1 segundo
   digitalWrite(LED_PIN, LOW);
-
-  //GESTION BUZZER
-  tone(BUZZER_PIN, 2000);  // Configura el buzzer en 2000 Hz
-  delay(1000);             // Activa el buzzer por 100 ms
-  noTone(BUZZER_PIN);      // Apaga el buzzer
-
+  noTone(BUZZER_PIN);
 
   // LLAMADAS PARA escribir y leer la tarjeta
   // writeRFID();   // Escribir
