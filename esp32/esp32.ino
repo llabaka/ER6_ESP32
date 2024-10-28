@@ -97,6 +97,7 @@ void connectToMQTT() {
       Serial.println("Conectado al broker MQTT");
       
       client.subscribe("test");
+      client.publish("testEsp32", "Hi, I'm ESP 32");
     } else {
       Serial.print("Falló la conexión, rc=");
       Serial.print(client.state());
@@ -164,10 +165,71 @@ void readRFID(void ) { /* function readRFID */
   delay(1000);             // Activa el buzzer por 100 ms
   noTone(BUZZER_PIN);      // Apaga el buzzer
 
+
+  // LLAMADAS PARA escribir y leer la tarjeta
+  // writeRFID();   // Escribir
+  readRFIDData();
+
   // Halt PICC
   rfid.PICC_HaltA();
 
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
 
+}
+
+void writeRFID(){
+  byte dataBlock[16] = {"Cj8<f&~esD)}cw1"};   // Mensaje a escribir
+  byte block = 4; // Bloque de la tarjeta que se escribe
+
+  MFRC522::StatusCode status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(rfid.uid));
+  if (status != MFRC522::STATUS_OK){
+    Serial.print(F("Fallo en auntenticación"));
+    Serial.println(rfid.GetStatusCodeName(status));
+    return;
+  }
+
+  status = rfid.MIFARE_Write(block, dataBlock, 16);
+  if(status != MFRC522::STATUS_OK){
+    Serial.print(F("Fallo al escribrir: "));
+    Serial.println(rfid.GetStatusCodeName(status));
+    return;
+  }
+  Serial.println(F("Datos escritos en el bloque 4. "));
+
+}
+
+void readRFIDData(){
+  byte buffer[18];
+  byte size = sizeof(buffer);
+  byte block = 4;  // Bloque de la tarjeta donde se leera
+
+  
+  MFRC522::StatusCode status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(rfid.uid));
+  if (status != MFRC522::STATUS_OK){
+    Serial.print(F("Fallo en auntenticación"));
+    Serial.println(rfid.GetStatusCodeName(status));
+    return;
+  }
+
+  status = rfid.MIFARE_Read(block, buffer, &size);
+  if(status != MFRC522::STATUS_OK){
+    Serial.print(F("Fallo al leer"));
+    Serial.println(rfid.GetStatusCodeName(status));
+    return;
+  }
+
+  Serial.print(F("Datos leidos del bloque 4: "));
+  char message[17];
+  for(byte i = 0; i < 16; i++){
+    message[i] = buffer[i];
+    Serial.write(buffer[i]);
+  }
+
+  message[16] = '\0'; 
+
+  client.publish("testCardID", message);
+
+
+  Serial.println();
 }
