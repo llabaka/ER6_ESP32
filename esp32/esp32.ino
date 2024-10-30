@@ -60,7 +60,8 @@ void setup()
 
     // Configuración del cliente MQTT
   client.setServer(mqtt_server, mqtt_port);
-  
+  client.setCallback(messageCallback);
+
   // Conectar al broker MQTT
   connectToMQTT();
 
@@ -235,7 +236,7 @@ void readRFIDData(){
 }
 
 // Definir la función callback que se llamará cuando llegue un mensaje
-void messageCalback(char* topic, byte* payload, unsigned int length){
+void messageCallback(char* topic, byte* payload, unsigned int length){
 
   Serial.print("Mensaje recibido en el tópico");
   Serial.print(topic);
