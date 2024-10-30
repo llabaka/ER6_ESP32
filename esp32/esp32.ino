@@ -13,7 +13,7 @@
 #define SS_PIN 5
 #define RST_PIN 22
 // LED
-#define LED_PIN 26
+#define GREENLED_PIN 26
 
 //BUZZER
 #define BUZZER_PIN 32
@@ -80,10 +80,10 @@ void setup()
   Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 
   // SETUP LED
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(GREENLED_PIN, OUTPUT);
 
   // SETUP BUZZER
-  // pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
 }
 
 void connectToMQTT() {
@@ -153,11 +153,10 @@ void readRFID(void ) { /* function readRFID */
   Serial.print(F("RFID In dec: "));
   printDec(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
+
   // GESTION DE LED
-  digitalWrite(LED_PIN, HIGH);
   tone(BUZZER_PIN, 2000); 
-  delay(1000); // LED encendido por 1 segundo
-  digitalWrite(LED_PIN, LOW);
+  delay(500); // BUZZER sonara por 1 segundo
   noTone(BUZZER_PIN);
 
   // LLAMADAS PARA escribir y leer la tarjeta
@@ -234,7 +233,6 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
   Serial.print("Mensaje recibido en el tópico: ");
   Serial.print(topic);
 
-  Serial.print("Mensaje: ");
   for(int i = 0; i < length; i++){
     Serial.print((char)payload[i]);
   }
@@ -245,5 +243,12 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
   }
   else if(String(topic) == "OpenDoor"){
     Serial.println("CODIGO DE MOVIMIENTO DE SERVO AQUI!");
+      
+    //Encendera el led verde y hara un pitido
+    digitalWrite(GREENLED_PIN, HIGH);
+    tone(BUZZER_PIN, 1000); 
+    delay(500); // LED y BUZZER encendido por 1 segundo
+    digitalWrite(GREENLED_PIN, LOW);
+    noTone(BUZZER_PIN);
   }
 }
