@@ -96,8 +96,8 @@ void connectToMQTT() {
     if (client.connect("LANDER_ESP32")) { // "ESP32Client" puede ser cualquier ID de cliente único
       Serial.println("Conectado al broker MQTT");
       
-      client.subscribe("test");
       client.publish("testEsp32", "Hi, I'm ESP 32");
+      client.subscribe("AnatiValidation");
     } else {
       Serial.print("Falló la conexión, rc=");
       Serial.print(client.state());
@@ -232,4 +232,21 @@ void readRFIDData(){
 
 
   Serial.println();
+}
+
+// Definir la función callback que se llamará cuando llegue un mensaje
+void messageCalback(char* topic, byte* payload, unsigned int length){
+
+  Serial.print("Mensaje recibido en el tópico");
+  Serial.print(topic);
+
+  Serial.print("Mensaje: ");
+  for(int i = 0; i < length; i++){
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  if(String(topic) == "AnatiValidation"){
+    Serial.println("Ejecutando codigo segun el topic");
+  }
 }
