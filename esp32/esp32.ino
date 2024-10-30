@@ -14,6 +14,7 @@
 #define RST_PIN 22
 // LED
 #define LED_PIN 26
+#define RED_LED_PIN 25
 
 //BUZZER
 #define BUZZER_PIN 32
@@ -81,6 +82,7 @@ void setup()
 
   // SETUP LED
   pinMode(LED_PIN, OUTPUT);
+  pinMode(RED_LED_PIN, OUTPUT);
 
   // SETUP BUZZER
   // pinMode(BUZZER_PIN, OUTPUT);
@@ -96,6 +98,7 @@ void connectToMQTT() {
       
       client.publish("testEsp32", "Hi, I'm ESP 32");
       client.subscribe("AnatiValidation");
+      client.subscribe("AnatiValidationFailed");
     } else {
       Serial.print("Falló la conexión, rc=");
       Serial.print(client.state());
@@ -242,5 +245,21 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
 
   if(String(topic) == "AnatiValidation"){
     Serial.println("Ejecutando codigo segun el topic");
+  }else if(String(topic) == "AnatiValidationFailed"){
+    Serial.println("Ejecutando AnatiValidationFailed");
+    // GESTION DE LED
+    digitalWrite(RED_LED_PIN, HIGH);
+    tone(BUZZER_PIN, 2000); 
+    delay(200);
+    noTone(BUZZER_PIN);
+    delay(100);
+    tone(BUZZER_PIN, 2000);
+    delay(200);
+    noTone(BUZZER_PIN);
+    delay(1000); // LED encendido por 1 segundo
+    digitalWrite(RED_LED_PIN, LOW);
+
+
+
   }
 }
