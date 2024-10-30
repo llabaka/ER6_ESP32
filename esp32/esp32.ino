@@ -250,5 +250,11 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
     delay(500); // LED y BUZZER encendido por 1 segundo
     digitalWrite(GREENLED_PIN, LOW);
     noTone(BUZZER_PIN);
+
+    //Delay temporal, cuando el servo se abra se mandara un pub
+    delay(2000);
+    Serial.println("TERMINA DE ABRIRSE EL SERVO");
+    client.publish("DoorIsOpen", "The Door is open");
+
   }
 }
