@@ -5,7 +5,6 @@
 #include <Arduino.h>
 #include <driver/ledc.h>
 
-
 // const char* ssid = "POCO F3"; // Cambié las comillas
 // const char* password = "llabakawifi"; // Cambié las comillas
 
@@ -15,7 +14,7 @@
 // LED
 #define GREENLED_PIN 26
 
-//BUZZER
+// BUZZER
 #define BUZZER_PIN 32
 
 // Sustituir con datos de vuestra red
@@ -31,6 +30,9 @@ byte nuidPICC[4] = {0, 0, 0, 0};
 MFRC522::MIFARE_Key key;
 MFRC522 rfid = MFRC522(SS_PIN, RST_PIN);
 
+char cardId[17] = ""; // Variable global para almacenar el cardId
+bool isReading = false; // Estado de bloqueo para evitar lecturas duplicadas
+
 void setup()
 {
   Serial.begin(115200);
@@ -45,7 +47,7 @@ void setup()
   while (WiFi.status() != WL_CONNECTED) 
   {
     delay(1000);
-  Serial.print('.');
+    Serial.print('.');
   }
 
   // Mostrar mensaje de exito y dirección IP asignada
@@ -55,13 +57,12 @@ void setup()
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());
 
-    // Configuración del cliente MQTT
+  // Configuración del cliente MQTT
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(messageCallback);
 
   // Conectar al broker MQTT
   connectToMQTT();
-
 
   // Init SPI with specified pins
   Serial.println(F("Initializing SPI communication..."));
@@ -94,7 +95,6 @@ void connectToMQTT() {
     if (client.connect("LANDER_ESP32")) { // "ESP32Client" puede ser cualquier ID de cliente único
       Serial.println("Conectado al broker MQTT");
       
-      client.subscribe("AnatiValidation");
       client.subscribe("OpenDoor");
     } else {
       Serial.print("Falló la conexión, rc=");
@@ -110,10 +110,6 @@ void loop() {
   readRFID();
 }
 
-
-/**
-   Helper routine to dump a byte array as hex values to Serial.
-*/
 void printHex(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
@@ -121,9 +117,6 @@ void printHex(byte *buffer, byte bufferSize) {
   }
 }
 
-/**
-   Helper routine to dump a byte array as dec values to Serial.
-*/
 void printDec(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
@@ -131,21 +124,23 @@ void printDec(byte *buffer, byte bufferSize) {
   }
 }
 
-void readRFID(void ) { /* function readRFID */
-  ////Read RFID card
-
+void readRFID(void ) { 
   for (byte i = 0; i < 6; i++) {
     key.keyByte[i] = 0xFF;
   }
-  // Look for new 1 cards
-  if ( ! rfid.PICC_IsNewCardPresent())
+  
+  if (!rfid.PICC_IsNewCardPresent())
     return;
 
-  // Verify if the NUID has been readed
-  if (  !rfid.PICC_ReadCardSerial())
+  if (!rfid.PICC_ReadCardSerial())
     return;
 
-  // Store NUID into nuidPICC array
+  if (isReading) {
+    return; // Si ya se está leyendo, no hacer nada
+  }
+  
+  isReading = true; // Establecer estado de lectura
+
   for (byte i = 0; i < 4; i++) {
     nuidPICC[i] = rfid.uid.uidByte[i];
   }
@@ -154,21 +149,17 @@ void readRFID(void ) { /* function readRFID */
   printDec(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
 
-  // GESTION DE LED
   tone(BUZZER_PIN, 2000); 
-  delay(500); // BUZZER sonara por 1 segundo
+  delay(500); // BUZZER sonará por 1 segundo
   noTone(BUZZER_PIN);
 
-  // LLAMADAS PARA escribir y leer la tarjeta
-  // writeRFID();   // Escribir
   readRFIDData();
 
-  // Halt PICC
   rfid.PICC_HaltA();
-
-  // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
 
+  delay(2000); // Esperar un segundo antes de permitir otra lectura
+  isReading = false; // Restablecer el estado de lectura
 }
 
 void writeRFID(){
@@ -177,30 +168,28 @@ void writeRFID(){
 
   MFRC522::StatusCode status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(rfid.uid));
   if (status != MFRC522::STATUS_OK){
-    Serial.print(F("Fallo en auntenticación"));
+    Serial.print(F("Fallo en autenticación"));
     Serial.println(rfid.GetStatusCodeName(status));
     return;
   }
 
   status = rfid.MIFARE_Write(block, dataBlock, 16);
   if(status != MFRC522::STATUS_OK){
-    Serial.print(F("Fallo al escribrir: "));
+    Serial.print(F("Fallo al escribir: "));
     Serial.println(rfid.GetStatusCodeName(status));
     return;
   }
-  Serial.println(F("Datos escritos en el bloque 4. "));
-
+  Serial.println(F("Datos escritos en el bloque 4."));
 }
 
 void readRFIDData(){
   byte buffer[18];
   byte size = sizeof(buffer);
-  byte block = 4;  // Bloque de la tarjeta donde se leera
+  byte block = 4;
 
-  
   MFRC522::StatusCode status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(rfid.uid));
   if (status != MFRC522::STATUS_OK){
-    Serial.print(F("Fallo en auntenticación"));
+    Serial.print(F("Fallo en autenticación"));
     Serial.println(rfid.GetStatusCodeName(status));
     return;
   }
@@ -212,24 +201,19 @@ void readRFIDData(){
     return;
   }
 
-  Serial.print(F("Datos leidos del bloque 4: "));
-  char message[17];
+  Serial.print(F("Datos leídos del bloque 4: "));
   for(byte i = 0; i < 16; i++){
-    message[i] = buffer[i];
+    cardId[i] = buffer[i];  // Guarda el mensaje en cardId
     Serial.write(buffer[i]);
   }
 
-  message[16] = '\0'; 
-
-  client.publish("testCardID", message);
-
+  cardId[16] = '\0';  // Termina la cadena
+  client.publish("testCardID", cardId);
 
   Serial.println();
 }
 
-// Definir la función callback que se llamará cuando llegue un mensaje
 void messageCallback(char* topic, byte* payload, unsigned int length){
-
   Serial.print("Mensaje recibido en el tópico: ");
   Serial.print(topic);
 
@@ -238,23 +222,17 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
   }
   Serial.println();
 
-  if(String(topic) == "AnatiValidation"){
-    Serial.println("Ejecutando codigo segun el topic");
-  }
-  else if(String(topic) == "OpenDoor"){
-    Serial.println("CODIGO DE MOVIMIENTO DE SERVO AQUI!");
-      
-    //Encendera el led verde y hara un pitido
+  if(String(topic) == "OpenDoor"){
+    Serial.println("Código de movimiento de servo aquí!");
+
     digitalWrite(GREENLED_PIN, HIGH);
     tone(BUZZER_PIN, 1000); 
     delay(500); // LED y BUZZER encendido por 1 segundo
     digitalWrite(GREENLED_PIN, LOW);
     noTone(BUZZER_PIN);
 
-    //Delay temporal, cuando el servo se abra se mandara un pub
     delay(2000);
     Serial.println("TERMINA DE ABRIRSE EL SERVO");
-    client.publish("DoorIsOpen", "The Door is open");
-
+    client.publish("DoorIsOpen", cardId);  // Usa cardId para publicar
   }
 }
