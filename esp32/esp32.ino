@@ -99,6 +99,7 @@ void connectToMQTT() {
       
       client.subscribe("OpenDoor");
       client.subscribe("AnatiValidationFailed");
+      client.subscribe("AnatiCloseDoor");
     } else {
       Serial.print("Falló la conexión, rc=");
       Serial.print(client.state());
@@ -251,5 +252,8 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
     noTone(BUZZER_PIN);
     delay(1000); // LED encendido por 1 segundo
     digitalWrite(RED_LED_PIN, LOW);
+    }
+    else if(String(topic) == "AnatiCloseDoor"){
+    Serial.println("EL SERVO CERRARIA LA PUERTA");
     }
   }
