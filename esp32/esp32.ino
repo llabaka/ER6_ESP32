@@ -20,11 +20,11 @@
 #define BUZZER_PIN 32
 
 // Sustituir con datos de vuestra red
-const char *ssid     = "AEG-IKASLE";
-const char *password = "Ea25dneAEG";
-const char *mqtt_server = "10.80.128.11";
+const char *ssid     = "0996";
+const char *password = "demv2vvfk76t9r";
+const char *mqtt_server = "192.168.1.136";
 const int mqtt_port = 1883; //MQTT insecure
-
+ 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
