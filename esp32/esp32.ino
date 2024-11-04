@@ -4,6 +4,7 @@
 #include <MFRC522.h>
 #include <Arduino.h>
 #include <driver/ledc.h>
+#include <ESP32Servo.h>
 
 // const char* ssid = "POCO F3"; // Cambié las comillas
 // const char* password = "llabakawifi"; // Cambié las comillas
@@ -18,10 +19,19 @@
 // BUZZER
 #define BUZZER_PIN 32
 
+// SERVO
+Servo myServo; // Crear objeto servo
+#define SERVO_PIN 21
+#define CLOSE_DOOR 0
+#define OPEN_DOOR 180
+int servoAngle = CLOSE_DOOR;
+
+
+
 // Sustituir con datos de vuestra red
-const char *ssid     = "0996";
-const char *password = "demv2vvfk76t9r";
-const char *mqtt_server = "192.168.1.136";
+const char *ssid     = "AEG-IKASLE";
+const char *password = "Ea25dneAEG";
+const char *mqtt_server = "10.80.128.249";
 const int mqtt_port = 1883; //MQTT insecure
  
 WiFiClient espClient;
@@ -87,6 +97,13 @@ void setup()
 
   // SETUP BUZZER
   pinMode(BUZZER_PIN, OUTPUT);
+
+  // SETUP SERVO
+  myServo.attach(SERVO_PIN);
+  myServo.write(180);    // Mover el servo a 0 grados
+  delay(1000);
+  myServo.write(0);    // Mover el servo a 0 grados
+  delay(1000);
 }
 
 void connectToMQTT() {
@@ -104,7 +121,7 @@ void connectToMQTT() {
       Serial.print("Falló la conexión, rc=");
       Serial.print(client.state());
       Serial.println(" Intentando de nuevo en 5 segundos");
-      delay(5000);
+      delay(1000);
     }
   }
 }
@@ -112,6 +129,16 @@ void connectToMQTT() {
 void loop() {
   client.loop();
   readRFID();
+
+  // Revisa la conexión WiFi
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi desconectado. Intentando reconectar...");
+    reconnectWiFi();
+  }
+  // Revisa la conexión MQTT
+  if (!client.connected()) {
+    connectToMQTT();
+  }
 }
 
 void printHex(byte *buffer, byte bufferSize) {
@@ -217,17 +244,23 @@ void readRFIDData(){
   Serial.println();
 }
 
-void messageCallback(char* topic, byte* payload, unsigned int length){
+void messageCallback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Mensaje recibido en el tópico: ");
   Serial.print(topic);
 
-  for(int i = 0; i < length; i++){
+  for(int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
 
-  if(String(topic) == "OpenDoor"){
-    Serial.println("Código de movimiento de servo aquí!");
+  if(String(topic) == "OpenDoor") {
+
+    Serial.println("El servo se ha empezado a mover");
+    //graduallyApplyServoAngle(90);
+    // Mover el servo a 90 grados
+    myServo.attach(21);     // Reasignar pin SERVO
+    myServo.write(180);     // Mover el servo a 0 grados
+    delay(1000);
 
     digitalWrite(GREENLED_PIN, HIGH);
     tone(BUZZER_PIN, 1000); 
@@ -235,10 +268,9 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
     digitalWrite(GREENLED_PIN, LOW);
     noTone(BUZZER_PIN);
 
-    delay(2000);
-    Serial.println("TERMINA DE ABRIRSE EL SERVO");
     client.publish("DoorIsOpen", cardId);  // Usa cardId para publicar
-    } else if(String(topic) == "AnatiValidationFailed"){
+
+  } else if(String(topic) == "AnatiValidationFailed") {
     Serial.println("Ejecutando AnatiValidationFailed");
 
     // GESTION DE LED
@@ -252,8 +284,30 @@ void messageCallback(char* topic, byte* payload, unsigned int length){
     noTone(BUZZER_PIN);
     delay(1000); // LED encendido por 1 segundo
     digitalWrite(RED_LED_PIN, LOW);
-    }
-    else if(String(topic) == "AnatiCloseDoor"){
-    Serial.println("EL SERVO CERRARIA LA PUERTA");
-    }
+
+  } else if(String(topic) == "AnatiCloseDoor") {
+    Serial.println("Cerrando la puerta...");
+
+    // Mover el servo a 0 grados
+    myServo.attach(21);      // Reasignar pin SERVO
+    myServo.write(0);     // Mover el servo a 0 grados
+    delay(1000);
   }
+}
+
+void reconnectWiFi() {
+  WiFi.disconnect();
+  WiFi.begin(ssid, password);
+  
+  // Espera hasta reconectarse
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  
+  Serial.println();
+  Serial.print("Reconectado al WiFi: ");
+  Serial.println(WiFi.SSID());
+  Serial.print("Nueva IP address: ");
+  Serial.println(WiFi.localIP());
+}
