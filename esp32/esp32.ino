@@ -7,9 +7,6 @@
 #include <ESP32Servo.h>
 #include "certs.h"
 
-// const char* ssid = "POCO F3"; // Cambié las comillas
-// const char* password = "llabakawifi"; // Cambié las comillas
-
 // PIN MFRC522
 #define SS_PIN 5
 #define RST_PIN 22
@@ -26,8 +23,6 @@ Servo myServo; // Crear objeto servo
 #define CLOSE_DOOR 0
 #define OPEN_DOOR 180
 int servoAngle = CLOSE_DOOR;
-
-
 
 // Sustituir con datos de vuestra red
 const char *ssid     = "AEG-IKASLE";
@@ -102,10 +97,6 @@ void setup()
 
   // SETUP SERVO
   myServo.attach(SERVO_PIN);
-  myServo.write(180);    // Mover el servo a 0 grados
-  delay(1000);
-  myServo.write(0);    // Mover el servo a 0 grados
-  delay(1000);
 }
 
 void connectToMQTT() {
