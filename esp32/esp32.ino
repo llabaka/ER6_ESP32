@@ -259,7 +259,7 @@ void messageCallback(char* topic, byte* payload, unsigned int length) {
     // Mover el servo a 90 grados
     myServo.attach(21);     // Reasignar pin SERVO
     myServo.write(180);     // Mover el servo a 0 grados
-    delay(1000);
+    delay(200);
 
     client.publish("AnatiDoorIsOpen", cardId);  // Usa cardId para publicar
 
@@ -284,7 +284,7 @@ void messageCallback(char* topic, byte* payload, unsigned int length) {
     // Mover el servo a 0 grados
     myServo.attach(21);      // Reasignar pin SERVO
     myServo.write(0);     // Mover el servo a 0 grados
-    delay(1000);
+    delay(200);
     Serial.println("Puerta cerrada!");
   }
 }
