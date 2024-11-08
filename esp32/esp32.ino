@@ -107,7 +107,7 @@ void connectToMQTT() {
     if (client.connect("LANDER_ESP32")) { // "ESP32Client" puede ser cualquier ID de cliente único
       Serial.println("Conectado al broker MQTT");
       
-      client.subscribe("OpenDoor");
+      client.subscribe("AnatiOpenDoor");
       client.subscribe("AnatiValidationFailed");
       client.subscribe("AnatiCloseDoor");
     } else {
@@ -232,7 +232,7 @@ void readRFIDData(){
   }
 
   cardId[16] = '\0';  // Termina la cadena
-  client.publish("testCardID", cardId);
+  client.publish("AnatiCardID", cardId);
 
   Serial.println();
 }
@@ -246,7 +246,7 @@ void messageCallback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  if(String(topic) == "OpenDoor") {
+  if(String(topic) == "AnatiOpenDoor") {
 
     Serial.println("El servo se ha empezado a mover");
 
@@ -261,7 +261,7 @@ void messageCallback(char* topic, byte* payload, unsigned int length) {
     myServo.write(180);     // Mover el servo a 0 grados
     delay(1000);
 
-    client.publish("DoorIsOpen", cardId);  // Usa cardId para publicar
+    client.publish("AnatiDoorIsOpen", cardId);  // Usa cardId para publicar
 
   } else if(String(topic) == "AnatiValidationFailed") {
     Serial.println("Ejecutando AnatiValidationFailed");
